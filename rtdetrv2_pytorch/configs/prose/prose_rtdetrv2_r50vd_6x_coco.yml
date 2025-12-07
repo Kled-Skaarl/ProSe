@@ -1,0 +1,117 @@
+# ProSe-RTDETRv2 Configuration
+# Data-Incremental Object Detection with Prototype-based Selection
+
+num_classes: 80
+num_queries: 300
+
+# Backbone
+backbone:
+  name: ResNet
+  depth: 50
+  variant: d
+  return_idx: [1, 2, 3]
+  dcn_v2_on_last_conv: True
+  num_stages: 4
+
+# Encoder (HybridEncoder)
+encoder:
+  name: HybridEncoder
+  in_channels: [512, 1024, 2048]
+  feat_strides: [8, 16, 32]
+  hidden_dim: 256
+  use_encoder_norm: True
+  num_encoder_layers: 1
+  encoder_self_attn_params:
+    num_heads: 8
+    dropout: 0.0
+    activation: relu
+
+# Decoder (RTDETRTransformerv2)
+decoder:
+  name: RTDETRTransformerv2
+  num_classes: 80
+  hidden_dim: 256
+  num_queries: 300
+  feat_channels: [512, 1024, 2048]
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  num_points: 4
+  nhead: 8
+  num_layers: 6
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learn_query_content: False
+  eval_spatial_size: null
+  cross_attn_method: default
+  query_select_method: default
+
+# ProSe Configuration
+prose:
+  use_prose: true
+  hidden_dim: 256
+  num_prototypes: 1200  # Recommended value from paper
+  num_heads: 8
+  alpha: 1.0            # Residual injection coefficient
+  lambda_weight: 0.5    # Weight for combining proto similarity and response consistency
+  use_gumbel_softmax: true
+
+# Training Configuration
+train_cfg:
+  epochs: 72
+  batch_size: 16
+  num_workers: 4
+  
+  # Optimizer
+  optimizer:
+    name: AdamW
+    lr: 0.0001
+    weight_decay: 0.0001
+    
+  # Learning rate scheduler
+  lr_scheduler:
+    name: MultiStepLR
+    milestones: [80, 110]
+    gamma: 0.1
+  
+  # Loss weights
+  loss_weights:
+    cls_weight: 1.0
+    bbox_weight: 5.0
+    giou_weight: 2.0
+  
+  # Data augmentation
+  augmentation:
+    use_mosaic: true
+    mosaic_prob: 0.5
+    use_mixup: true
+    mixup_prob: 0.5
+    use_random_perspective: true
+    degrees: 10.0
+    translate: 0.1
+    scale: 0.5
+    flipud: 0.5
+    fliplr: 0.5
+    mosaic_border: [-320, -320]
+
+# Evaluation Configuration
+eval_cfg:
+  eval_interval: 10
+  save_interval: 10
+  metric: coco
+
+# Data Configuration
+data_cfg:
+  dataset: coco
+  train_set: train2017
+  val_set: val2017
+  test_set: test-dev2017
+  num_classes: 80
+  img_size: 640
+  
+  # Data augmentation for evaluation
+  eval_size: 640
+  keep_ratio: true
